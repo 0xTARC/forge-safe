@@ -100,7 +100,7 @@ abstract contract BatchScript is Script {
 
         // Set the Safe API base URL and multisend address based on chain
         if (chainId == 1) {
-            SAFE_API_BASE_URL = "https://safe-transaction-mainnet.safe.global/api/v1/safes/";
+            SAFE_API_BASE_URL = "https://api.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
         } else if (chainId == 5) {
             SAFE_API_BASE_URL = "https://safe-transaction-goerli.safe.global/api/v1/safes/";
@@ -114,7 +114,11 @@ abstract contract BatchScript is Script {
         } else if (chainId == 81457 ) {
             SAFE_API_BASE_URL = "https://safe-transaction-blast.safe.global/api/v1/safes/";
             SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
-        } else {
+        } else if (chainId == 11155111) {
+            SAFE_API_BASE_URL = "https://api.safe.global/tx-service/sep/api/v1/safes/";
+            SAFE_MULTISEND_ADDRESS = 0xA238CBeb142c10Ef7Ad8442C6D1f9E89e07e7761;
+        }
+        else {
             revert("Unsupported chain");
         }
 
@@ -147,10 +151,11 @@ abstract contract BatchScript is Script {
     function addToBatch(
         address to_,
         uint256 value_,
-        bytes memory data_
+        bytes memory data_,
+        Operation operation
     ) internal returns (bytes memory) {
         // Add transaction to batch array
-        encodedTxns.push(abi.encodePacked(Operation.CALL, to_, value_, data_.length, data_));
+        encodedTxns.push(abi.encodePacked(operation, to_, value_, data_.length, data_));
 
         // Simulate transaction and get return value
         vm.prank(safe);
@@ -476,9 +481,10 @@ abstract contract BatchScript is Script {
         );
     }
 
-    function _getHeaders() private pure returns (string[] memory) {
-        string[] memory headers = new string[](1);
+    function _getHeaders() private view returns (string[] memory) {
+        string[] memory headers = new string[](2);
         headers[0] = "Content-Type: application/json";
+        headers[1] = string.concat("Authorization: Bearer ", vm.envString("SAFE_TX_API_KEY"));
         return headers;
     }
 
